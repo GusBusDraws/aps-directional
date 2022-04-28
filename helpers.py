@@ -70,7 +70,9 @@ def get_imgs(
 
 def save_as_gif(
     save_path, 
-    imgs
+    imgs,
+    equalize_hist=False,
+    fps=10,
 ):
     """Function for saving image stack as an animated GIF
 
@@ -80,6 +82,10 @@ def save_as_gif(
         Path to save animation, including filename. '.gif' will be to the end if it's not included
     imgs : np.ndarray
         NxHxD Numpy array (N: number of images, H: height, W: width) representing stack of images to be animated
+    equalize_hist : bool, optional
+        If True, adaptive histogram equaliztion performed on each frame of image to improve contrast. Defaults to False.
+    fps : int, optional
+        The framerate in frames per second to save the output GIF. Defaults to 10.
 
     Raises
     ------
@@ -96,8 +102,14 @@ def save_as_gif(
     if save_path.exists():
         raise ValueError(f'File already exists: {save_path}')
     print('Saving animation...')
-    img_list = [
-        skimage.util.img_as_ubyte(imgs[i, :, :]) for i in range(imgs.shape[0])
-    ]
-    iio.mimsave(save_path, img_list)
+    # Add each slice of imgs to a list of images
+    img_list = [imgs[i, :, :] for i in range(imgs.shape[0])]
+    # Iterate through images in list
+    for i, img in enumerate(img_list):
+        if equalize_hist:
+            img = skimage.exposure.equalize_adapthist(img)
+        img = skimage.util.img_as_ubyte(img)
+        img_list[i] = img
+    # Save list of images as frames in GIF
+    iio.mimsave(save_path, img_list, fps=fps)
     print(f'Animation saved: {save_path}')
