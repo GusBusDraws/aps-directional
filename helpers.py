@@ -2,7 +2,8 @@
 from pathlib import Path
 import imageio as iio
 import numpy as np
-import skimage
+import skimage.exposure
+import skimage.util
 
 
 def get_imgs(
