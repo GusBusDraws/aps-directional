@@ -114,3 +114,18 @@ def save_as_gif(
     # Save list of images as frames in GIF
     iio.mimsave(save_path, img_list, fps=fps)
     print(f'Animation saved: {save_path}')
+
+def save_as_pngs(save_dir, imgs):
+    save_dir = Path(save_dir)
+    if not save_dir.is_dir():
+        save_dir.mkdir()
+    else:
+        raise ValueError(f'Directory already exists: {save_dir}')
+    exp_name = save_dir.stem
+    n_imgs = imgs.shape[0]
+    n_digits = len(str(n_imgs))
+    for i in range(n_imgs):
+        iio.imwrite(
+                Path(save_dir) / f'{exp_name}_{str(i).zfill(n_digits)}.png',
+                imgs[i, :, :])
+
