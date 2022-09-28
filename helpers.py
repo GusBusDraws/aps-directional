@@ -134,6 +134,7 @@ def save_as_pngs(
     exp_name = save_dir.stem
     n_imgs = imgs.shape[0]
     n_digits = len(str(n_imgs))
+    print('Saving images...')
     for i in range(n_imgs):
         save_path = Path(save_dir) / f'{exp_name}_{str(i).zfill(n_digits)}.png'
         if scalebar_dict is not None:
@@ -143,8 +144,9 @@ def save_as_pngs(
             # Create scale bar
             scalebar = ScaleBar(**scalebar_dict)
             ax.add_artist(scalebar)
-            fig.savefig(save_path, dpi=300)
+            fig.savefig(save_path, dpi=300, bbox_inches='tight')
             plt.close(fig)
         else:
             iio.imwrite(save_path, imgs[i, :, :])
+    print(f'{i + 1} images saved to: {save_dir}')
 
