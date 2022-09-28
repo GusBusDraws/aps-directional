@@ -1,16 +1,16 @@
 # Standard library imports
 from pathlib import Path
-import imageio as iio
+import imageio.v3 as iio
 import numpy as np
 import skimage.exposure
 import skimage.util
 
 
 def get_imgs(
-    img_dir_path, 
-    img_start=None, 
-    img_stop=None, 
-    img_step=None, 
+    img_dir_path,
+    img_start=None,
+    img_stop=None,
+    img_step=None,
     n_imgs=None,
     print_nums=False,
     img_suffix='tif'
@@ -34,11 +34,11 @@ def get_imgs(
     -------
     np.array
         Numpy array with shape of NxHxW (N: number of images, H: height, W: width) representing images stacked along axis=0
-    
+
     Raises
     ------
     ValueError
-        Raised if img_dir_path does not exist 
+        Raised if img_dir_path does not exist
     """
     # Convert img_dir_path to Path object if it is not one already
     img_dir_path = Path(img_dir_path)
@@ -70,7 +70,7 @@ def get_imgs(
     return np.stack(imgs, axis=0)
 
 def save_as_gif(
-    save_path, 
+    save_path,
     imgs,
     equalize_hist=False,
     fps=10,
