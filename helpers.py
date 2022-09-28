@@ -1,6 +1,8 @@
 # Standard library imports
 from pathlib import Path
 import imageio.v3 as iio
+import matplotlib.pyplot as plt
+from matplotlib_scalebar.scalebar import ScaleBar
 import numpy as np
 import skimage.exposure
 import skimage.util
@@ -80,13 +82,17 @@ def save_as_gif(
     Parameters
     ----------
     save_path : str or Path object
-        Path to save animation, including filename. '.gif' will be to the end if it's not included
+        Path to save animation, including filename. '.gif' will be to the end
+        if it's not included
     imgs : np.ndarray
-        NxHxD Numpy array (N: number of images, H: height, W: width) representing stack of images to be animated
+        NxHxD Numpy array (N: number of images, H: height, W: width)
+        representing stack of images to be animated
     equalize_hist : bool, optional
-        If True, adaptive histogram equaliztion performed on each frame of image to improve contrast. Defaults to False.
+        If True, adaptive histogram equaliztion performed on each frame of
+        image to improve contrast. Defaults to False.
     fps : int, optional
-        The framerate in frames per second to save the output GIF. Defaults to 10.
+        The framerate in frames per second to save the output GIF.
+        Defaults to 10.
 
     Raises
     ------
@@ -99,7 +105,8 @@ def save_as_gif(
         save_path = save_path + '.gif'
     # Convert save_path to a Path object
     save_path = Path(save_path)
-    # Raise ValueError if save_path already exists (to prevent accidentally overwriting)
+    # Raise ValueError if save_path already exists
+    # (to prevent accidentally overwriting)
     if save_path.exists():
         raise ValueError(f'File already exists: {save_path}')
     print('Saving animation...')
@@ -115,17 +122,29 @@ def save_as_gif(
     iio.mimsave(save_path, img_list, fps=fps)
     print(f'Animation saved: {save_path}')
 
-def save_as_pngs(save_dir, imgs):
+def save_as_pngs(
+        save_dir, imgs, scalebar_dict={
+                'dx' : 1.4, 'units' : "um", 'length_fraction' : 0.2,
+                'border_pad' : 0.5, 'location' : 'lower right'}):
     save_dir = Path(save_dir)
     if not save_dir.is_dir():
-        save_dir.mkdir()
+        save_dir.mkdir(parents=True)
     else:
         raise ValueError(f'Directory already exists: {save_dir}')
     exp_name = save_dir.stem
     n_imgs = imgs.shape[0]
     n_digits = len(str(n_imgs))
     for i in range(n_imgs):
-        iio.imwrite(
-                Path(save_dir) / f'{exp_name}_{str(i).zfill(n_digits)}.png',
-                imgs[i, :, :])
+        save_path = Path(save_dir) / f'{exp_name}_{str(i).zfill(n_digits)}.png'
+        if scalebar_dict is not None:
+            fig, ax = plt.subplots(dpi=300)
+            ax.imshow(imgs[i, :, :], vmin=0, vmax=1, cmap='gray')
+            ax.set_axis_off()
+            # Create scale bar
+            scalebar = ScaleBar(**scalebar_dict)
+            ax.add_artist(scalebar)
+            fig.savefig(save_path, dpi=300)
+            plt.close(fig)
+        else:
+            iio.imwrite(save_path, imgs[i, :, :])
 
