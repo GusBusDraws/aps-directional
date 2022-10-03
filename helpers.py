@@ -164,8 +164,8 @@ def save_as_gif(
     # Iterate through images in list
     for i, img in enumerate(img_list):
         if equalize_hist:
-            img = skimage.exposure.equalize_adapthist(img)
-        img = skimage.util.img_as_ubyte(img)
+            img = exposure.equalize_adapthist(img)
+        img = util.img_as_ubyte(img)
         img_list[i] = img
     # Save list of images as frames in GIF
     iio.mimsave(save_path, img_list, fps=fps)
