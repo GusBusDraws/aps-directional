@@ -4,9 +4,56 @@ import imageio.v3 as iio
 import matplotlib.pyplot as plt
 from matplotlib_scalebar.scalebar import ScaleBar
 import numpy as np
-import skimage.exposure
-import skimage.util
+from skimage import exposure, filters, registration, util
 
+
+def align_and_sub_liq(imgs, clip=[0.1, 99.9], hist_eq_clip_lim=0.0001):
+    # Median filter images before converting to float
+    print('Applying median filter...')
+    imgs_med = filters.median(imgs)
+    # Convert image to float before calculations
+    imgs_float = util.img_as_float(imgs_med)
+    # Calculate max offset between first and last image
+    print('Calculating max offset between first and last images...')
+    offset, error, diffphase = registration.phase_cross_correlation(
+            imgs_float[0, :, :], imgs_float[-1, :, :])
+    max_offset_r = int(offset[0])
+    max_offset_c = int(offset[1])
+    # Calc liquid-subtracted images with offset/drift-correction
+    imgs_crctd = np.zeros(
+            (imgs_float.shape[0],
+             imgs_float.shape[1] - abs(max_offset_r),
+             imgs_float.shape[2] - abs(max_offset_c)))
+    # Iterate through each image and perform subtraction adjusting for offset
+    print('Aligning each image and subtracting liquid image...')
+    for i in range(imgs_float.shape[0]):
+        offset, error, diffphase = registration.phase_cross_correlation(
+                imgs_float[0, :, :], imgs_float[i, :, :])
+        offset_r = int(offset[0])
+        offset_c = int(offset[1])
+        img_liq = imgs_float[
+                0,
+                : imgs_float.shape[1] - abs(max_offset_r),
+                : imgs_float.shape[2] - abs(max_offset_c)]
+        img_i = imgs_float[
+                i,
+                abs(offset_r) :
+                        imgs.shape[1] - (abs(max_offset_r) - abs(offset_r)),
+                abs(offset_c) :
+                        imgs.shape[2] - (abs(max_offset_c) - abs(offset_c))]
+        imgs_crctd[i, :, :] = img_i - img_liq
+    if clip is not None:
+        print('Clipping highest and lowest intensities...')
+        low, high = np.percentile(imgs_crctd, (clip[0], clip[1]))
+        imgs_crctd = np.clip(imgs_crctd, low, high)
+    if hist_eq_clip_lim:
+        print('Equalizing histograms...')
+        imgs_sub_0to1 = exposure.rescale_intensity(
+                imgs_crctd, in_range='image', out_range=(0, 1))
+        imgs_crctd = exposure.equalize_adapthist(
+                imgs_sub_0to1, clip_limit=hist_eq_clip_lim)
+    print(f'{imgs_crctd.shape[0]} images processed.')
+    return imgs_crctd
 
 def get_imgs(
     img_dir_path,
@@ -28,14 +75,16 @@ def get_imgs(
     img_stop : None or int, optional
         Stopping index of images to preview, by default None.
     img_step : None or int, optional
-        Step by which to retrieve images between img_start and img_stop, by default None
+        Step by which to retrieve images between img_start and img_stop.
+        Defaults to None
     img_suffix : str, optional
         File suffix of images in img_dir_path, by default 'tif'
 
     Returns
     -------
     np.array
-        Numpy array with shape of NxHxW (N: number of images, H: height, W: width) representing images stacked along axis=0
+        Numpy array with shape of NxHxW (N: number of images, H: height,
+        W: width) representing images stacked along axis=0
 
     Raises
     ------
