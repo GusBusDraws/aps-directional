@@ -172,9 +172,14 @@ def save_as_gif(
     print(f'Animation saved: {save_path}')
 
 def save_as_pngs(
-        save_dir, imgs, scalebar_dict={
-                'dx' : 1.4, 'units' : "um", 'length_fraction' : 0.2,
-                'border_pad' : 0.5, 'location' : 'lower right'}):
+        save_dir,
+        imgs,
+        scalebar_dict=dict(
+                dx=1.4, units="um", length_fraction=0.2,
+                border_pad=0.5, location='lower right'),
+        timestamp_dict=dict(
+                x=25, y=50, fps=0.8459, digits_before_dec=3,
+                digits_after_dec=3)):
     save_dir = Path(save_dir)
     if not save_dir.is_dir():
         save_dir.mkdir(parents=True)
@@ -186,13 +191,28 @@ def save_as_pngs(
     print('Saving images...')
     for i in range(n_imgs):
         save_path = Path(save_dir) / f'{exp_name}_{str(i).zfill(n_digits)}.png'
-        if scalebar_dict is not None:
+        if scalebar_dict is not None or timestamp_dict is not None:
             fig, ax = plt.subplots(dpi=300)
             ax.imshow(imgs[i, :, :], vmin=0, vmax=1, cmap='gray')
             ax.set_axis_off()
-            # Create scale bar
-            scalebar = ScaleBar(**scalebar_dict)
-            ax.add_artist(scalebar)
+            if scalebar_dict is not None:
+                # Create scale bar
+                scalebar = ScaleBar(**scalebar_dict)
+                ax.add_artist(scalebar)
+            if timestamp_dict is not None:
+                # Create timestamp
+                timestamp_val = format(
+                        i / timestamp_dict['fps'],
+                        f".{timestamp_dict['digits_after_dec']}f")
+                total_digits = (
+                        1 + timestamp_dict['digits_after_dec']
+                        + timestamp_dict['digits_before_dec'])
+                timestamp_str = (
+                        f'{str(timestamp_val).zfill(total_digits)} s')
+                ax.text(
+                        timestamp_dict['x'], timestamp_dict['y'], timestamp_str,
+                        ha="left", va="center", size=9,
+                        bbox=dict(boxstyle="square,pad=0.2", fc="white", ec="None"))
             fig.savefig(save_path, dpi=300, bbox_inches='tight')
             plt.close(fig)
         else:
